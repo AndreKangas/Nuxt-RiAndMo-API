@@ -1,43 +1,92 @@
+import { Chart } from "chart.js";
+
 export const state = () => ({
-  page: 1,
-  results: [],
-  pagination: {
-    count: 0,
-    next: null,
-    pages: 0,
-    prev: null
-  },
-  isLoading: false
+  countries: [],
+  country: [],
+  search: "",
+  filter: [],
+  sortingCategories: [
+    { name: "Total Confirmed Asc", field: "TotalConfirmed", order: "asc" },
+    { name: "Total Confirmed Desc", field: "TotalConfirmed", order: "desc" },
+    { name: "New Confirmed Asc", field: "NewConfirmed", order: "asc" },
+    { name: "New Confirmed Desc", field: "NewConfirmed", order: "desc" },
+    { name: "Total Deaths Asc", field: "TotalDeaths", order: "asc" },
+    { name: "Total Deaths Desc", field: "TotalDeaths", order: "desc" },
+    { name: "New Deaths Asc", field: "NewDeaths", order: "asc" },
+    { name: "New Deaths Desc", field: "NewDeaths", order: "desc" }
+  ],
+  sort: { name: "Total Confirmed Desc", field: "TotalConfirmed", order: "desc" }
 });
 
 export const mutations = {
-  SET_RESULTS(state, results) {
-    state.results = results;
+  SET_COUNTRIES(state, countries) {
+    state.countries = countries;
   },
-  SET_PAGINATION(state, pagination) {
-    state.pagination = pagination;
+  SET_SEARCH(state, search) {
+    state.search = search;
   },
-  TOGGLE_IS_LOADING(state) {
-    state.isLoading = !state.isLoading;
+  SET_SORT(state, sort) {
+    state.sort = sort;
   },
-  SET_PAGE(state, page) {
-    state.page = page;
+  SET_COUNTRY(state, country) {
+    state.country = country;
+  },
+  SET_FILTER(state, filter) {
+    state.country = filter;
   }
 };
 
 export const actions = {
-  getPage(context, page) {
-    context.commit("TOGGLE_IS_LOADING");
+  getSummary(context) {
+    this.$axios.get("https://api.covid19api.com/summary").then(response => {
+      // console.log(response.data, 'fromdispatch')
+      context.commit("SET_COUNTRIES", response.data.Countries);
+    });
+  },
+  getCountry(context, passData) {
     this.$axios
-      .get("https://rickandmortyapi.com/api/character", {
+      .get("https://api.covid19api.com/country/" + passData.slug, {
         params: {
-          page: page
+          from: passData.startDate ? passData.startDate : "",
+          to: passData.endDate ? passData.endDate : ""
         }
       })
       .then(response => {
-        context.commit("SET_RESULTS", response.data.results);
-        context.commit("SET_PAGINATION", response.data.info);
-        context.commit("TOGGLE_IS_LOADING");
+        context.commit("SET_COUNTRY", response.data);
       });
+  }
+};
+
+export const getters = {
+  countryNames(state) {
+    return state.countries.map(country => country.Country);
+  },
+  filteredCountries(state) {
+    return state.countries.filter(country => {
+      return (
+        state.search.toLowerCase() ===
+        country.Country.substr(0, state.search.length).toLowerCase()
+      );
+    });
+  },
+  sortedCountries(state, getters) {
+    return getters.filteredCountries.sort((a, b) => {
+      let desc = state.sort.order == "desc" ? -1 : 1;
+      if (a[state.sort.field] > b[state.sort.field]) {
+        return 1 * desc;
+      } else if (a[state.sort.field] < b[state.sort.field]) {
+        return -1 * desc;
+      }
+      return 0;
+    });
+  },
+  labels(state) {
+    return state.country.map(data => new Date(data.Date).toLocaleDateString());
+  },
+  confirmed(state) {
+    return state.country.map(data => data.Confirmed);
+  },
+  deaths(state) {
+    return state.country.map(data => data.Deaths);
   }
 };

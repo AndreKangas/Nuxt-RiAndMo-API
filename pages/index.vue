@@ -1,35 +1,45 @@
 <template>
   <div>
-    <div class="text-center">
-      <v-pagination
-        v-model="page"
-        :length="$store.state.pagination.pages"
-        :total-visible="7"
-        @previous="prev"
-        @next="next"
-        @input="getPage"
-      >
-      </v-pagination>
-    </div>
-
+    <v-row>
+      <v-col cols="9">
+        <v-text-field
+          v-model="search"
+          dense
+          filled
+          label="Search"
+        ></v-text-field>
+      </v-col>
+      <v-col cols="3">
+        <v-select
+          :items="$store.state.sortingCategories"
+          item-text="name"
+          filled
+          label="Sort"
+          v-model="sort"
+          return-object
+        ></v-select>
+      </v-col>
+    </v-row>
     <v-row>
       <v-col
         :cols="3"
-        v-for="result in $store.state.results"
-        :key="'result-' + result.id"
+        v-for="country in $store.getters.sortedCountries"
+        :key="'result-' + country.ID"
       >
         <v-card elevation="2">
-          <v-img :src="result.image"></v-img>
           <v-card-title
-            ><router-link :to="'/character/' + result.id">{{
-              result.name
-            }}</router-link></v-card-title
+            ><nuxt-link :to="'/country/' + country.Slug">{{
+              country.Country
+            }}</nuxt-link></v-card-title
           >
           <v-card-text>
             <ul>
-              <li><b>Status:</b>{{ result.name }}</li>
-              <li><b>Gender:</b>{{ result.gender }}</li>
-              <li><b>Species:</b>{{ result.species }}</li>
+              <li><b>New Confirmed:</b>{{ country.NewConfirmed }}</li>
+              <li><b>Total Confirmed:</b>{{ country.TotalConfirmed }}</li>
+              <li><b>New Deaths:</b>{{ country.NewDeaths }}</li>
+              <li><b>Total Deaths:</b>{{ country.TotalDeaths }}</li>
+              <!-- <li><b>New Recovered:</b>{{country.NewRecovered}}</li>
+          <li><b>Total Recovered:</b>{{country.TotalRecovered}}</li> -->
             </ul>
           </v-card-text>
         </v-card>
@@ -41,40 +51,32 @@
 <script>
 export default {
   created() {
-    if (this.$route.query.page) {
-      this.$store.commit("SET_PAGE", parseInt(this.$route.query.page));
-    }
-    this.$store.dispatch("getPage", this.$store.state.page);
+    this.$store.dispatch("getSummary");
   },
-  beforeRouteUpdate(to, from, next) {
-    let page = 1;
-    if (to.query.page) {
-      this.page = parseInt(to.query.page);
-    }
-    $store.commit("SET_PAGE", page);
-    next();
-  },
-
-  methods: {
-    next() {
-      this.getPage(this.page + 1);
-    },
-    prev() {
-      this.getPage(this.page - 1);
-    },
-    getPage(page) {
-      this.$router.push("/?page=" + page);
-      this.$store.dispatch("getPage", page);
-    }
-  },
-
+  methods: {},
   computed: {
-    page: {
-      set(value) {
-        this.$store.commit("SET_PAGE", value);
-      },
+    search: {
       get() {
-        return this.$store.state.page;
+        return this.$store.state.search;
+      },
+      set(value) {
+        this.$store.commit("SET_SEARCH", value);
+      }
+    },
+    sort: {
+      get() {
+        return this.$store.state.sort;
+      },
+      set(value) {
+        this.$store.commit("SET_SORT", value);
+      }
+    },
+    filter: {
+      get() {
+        return this.$store.state.filter;
+      },
+      set(value) {
+        this.$store.commit("SET_FILTER", value);
       }
     }
   }
